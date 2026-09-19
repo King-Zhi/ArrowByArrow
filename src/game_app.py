@@ -380,8 +380,8 @@ class GameApp:
             self.sound_mgr.play("fly")
             self.renderer.add_particles(cx, cy, count=18)
         elif status == "blocked":
-            self.sound_mgr.play("blocked")
-            self.renderer.add_particles(cx, cy, count=12, palette=[ColorPalette.ROSE, (255, 120, 150), (200, 30, 60)])
+            # 箭头启动飞出，在飞抵阻挡物接触点时再触发碰撞重击音效与粒子喷发
+            self.sound_mgr.play("click")
 
     def _action_restart(self):
         """重启当前关卡"""
@@ -418,6 +418,20 @@ class GameApp:
         if self.state == GameState.PLAYING and self.current_board:
             self.level_elapsed = time.time() - self.level_start_time
             self.current_board.update(dt, self.renderer.cell_size)
+
+            # 监测受阻箭头是否刚好在当前帧飞抵并撞击阻挡箭头
+            for arrow in self.current_board.grid.values():
+                if getattr(arrow, "just_impacted", False):
+                    arrow.just_impacted = False
+                    self.sound_mgr.play("blocked")
+                    # 在箭头尖端与阻挡箭头的物理接触交界处爆发展现霓虹火花
+                    dr, dc = arrow.direction.delta
+                    hit_x = self.renderer.grid_origin_x + (arrow.col + 0.5) * self.renderer.cell_size + arrow.offset_x + dc * (self.renderer.cell_size * 0.38)
+                    hit_y = self.renderer.grid_origin_y + (arrow.row + 0.5) * self.renderer.cell_size + arrow.offset_y + dr * (self.renderer.cell_size * 0.38)
+                    self.renderer.add_particles(
+                        hit_x, hit_y, count=16,
+                        palette=[ColorPalette.ROSE, (255, 140, 160), (255, 230, 240), ColorPalette.CYAN]
+                    )
 
             # AI 自动步进推演
             if self.ai_solving:
@@ -487,26 +501,24 @@ class GameApp:
         draw_tactile_arrow(self.screen, (cx - 215 + arrow_pulse, 145), size=40, angle_deg=90)
         draw_tactile_arrow(self.screen, (cx + 215 - arrow_pulse, 145), size=40, angle_deg=270)
 
-        # 副标（纯净中文字符，两端用矢量菱形点缀）
-        font_sub = FontManager.get(16, bold=True)
-        sub_surf = font_sub.render("观察方向 · 巧妙规避 · 箭无虚发", True, ColorPalette.TEXT_MAIN)
-        sub_rect = sub_surf.get_rect(center=(cx, 210))
+        # 副标（采用未加粗的高清字体与微透科技胶囊底板，字体边缘平滑清晰，彻底告别锯齿与杂点）
+        sub_card_rect = pygame.Rect(cx - 185, 195, 370, 32)
+        draw_card(self.screen, sub_card_rect, bg_color=(20, 16, 42), border_color=(65, 52, 105), radius=8, shadow=False, tech_corners=False)
+
+        font_sub = FontManager.get(15, bold=False)
+        sub_surf = font_sub.render("观察方向  ·  巧妙规避  ·  箭无虚发", True, (225, 235, 255))
+        sub_rect = sub_surf.get_rect(center=sub_card_rect.center)
         self.screen.blit(sub_surf, sub_rect)
 
-        # 绘制副标左右两侧精致菱形小装饰
+        # 左右两侧精致微光菱形点缀
         for sign in (-1, 1):
-            dx = sign * (sub_rect.width // 2 + 18)
-            dia_pts = [(cx + dx, 210 - 5), (cx + dx + 5, 210), (cx + dx, 210 + 5), (cx + dx - 5, 210)]
-            pygame.draw.polygon(self.screen, ColorPalette.AMBER, dia_pts)
+            dx = sign * (sub_card_rect.width // 2 - 14)
+            dia_pts = [(cx + dx, sub_card_rect.centery - 4), (cx + dx + 4, sub_card_rect.centery), (cx + dx, sub_card_rect.centery + 4), (cx + dx - 4, sub_card_rect.centery)]
+            pygame.draw.polygon(self.screen, ColorPalette.CYAN, dia_pts)
 
         # 2. 菜单卡片选项
         for btn in self.menu_buttons:
             btn.draw(self.screen)
-
-        # 3. 底部版权与课程标识
-        font_foot = FontManager.get(12)
-        foot_surf = font_foot.render("2026秋软件工程课程个人作业 · 基于 Python + Pygame 独立构建", True, (130, 145, 185))
-        self.screen.blit(foot_surf, foot_surf.get_rect(center=(cx, self.height - 25)))
 
     def _render_playing(self):
         """渲染主游戏界面与状态"""

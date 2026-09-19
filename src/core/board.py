@@ -120,9 +120,10 @@ class Board:
                 "mistakes_left": self.remaining_mistakes
             }
         else:
-            # 碰撞受阻
+            # 碰撞受阻：计算距离阻挡物的网格距离
             self.remaining_mistakes = max(0, self.remaining_mistakes - 1)
-            arrow.start_collision()
+            dist_cells = abs(blocker.row - arrow.row) + abs(blocker.col - arrow.col) if blocker else 1.0
+            arrow.start_collision(dist_cells=dist_cells)
 
             self.history_stack.append({
                 "type": "mistake",
@@ -134,6 +135,7 @@ class Board:
                 "status": "blocked",
                 "arrow": arrow,
                 "blocker": blocker,
+                "dist_cells": dist_cells,
                 "mistakes_left": self.remaining_mistakes
             }
 

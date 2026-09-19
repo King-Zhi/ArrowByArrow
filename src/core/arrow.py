@@ -91,6 +91,9 @@ class Arrow:
         self.offset_x = 0.0           # 屏幕像素偏移 X
         self.offset_y = 0.0           # 屏幕像素偏移 Y
         self.anim_duration = 0.25     # 秒
+        self.collision_dist_cells = 1.0 # 距离碰撞障碍物的格子数
+        self.impact_triggered = False  # 是否已触发撞击接触点事件
+        self.just_impacted = False     # 当前帧是否刚达到撞击点
 
         # 高亮提示（用于提示功能）
         self.is_highlighted = False
@@ -108,55 +111,99 @@ class Arrow:
         self.anim_progress = 0.0
         self.anim_duration = duration
 
-    def start_collision(self, duration: float = 0.35):
-        """开始碰撞受阻动画（前冲微移然后左右晃动回位）"""
+    def start_collision(self, dist_cells: float = 1.0, duration: Optional[float] = None):
+        """
+        开始受阻碰撞物理动画：
+        1. 箭头先沿着其方向飞过空格，直至接触前方阻挡它的箭头
+        2. 在撞击接触点触发震颤、粒子与音效反馈
+        3. 从撞击点平滑滑动回退至原初始单元格
+        """
         self.state = ArrowState.COLLIDING
         self.anim_progress = 0.0
-        self.anim_duration = duration
+        self.collision_dist_cells = max(1.0, float(dist_cells))
+        # 飞行距离越远，动画总时长相应微调，以保证视觉上清晰可见的飞行轨迹
+        self.anim_duration = duration or (0.28 + 0.07 * min(4.0, self.collision_dist_cells))
+        self.impact_triggered = False
+        self.just_impacted = False
 
     def update(self, dt: float, cell_size: float = 70.0) -> bool:
         """
         更新动画插值
         返回 True 表示状态发生了改变（例如飞出完成或晃动结束）
         """
+        self.just_impacted = False
+
         if self.state == ArrowState.IDLE or self.state == ArrowState.ELIMINATED:
             self.offset_x = 0.0
             self.offset_y = 0.0
             return False
 
         self.anim_progress += dt / self.anim_duration
+        p = self.anim_progress
 
         if self.state == ArrowState.FLYING:
             # 沿箭头方向高速飞向视口外部（飞出 8~10 个格子长度）
             dr, dc = self.direction.delta
-            dist = (self.anim_progress ** 1.6) * cell_size * 10
+            dist = (p ** 1.6) * cell_size * 10
             self.offset_x = dc * dist
             self.offset_y = dr * dist
 
-            if self.anim_progress >= 1.0:
+            if p >= 1.0:
                 self.state = ArrowState.ELIMINATED
                 self.anim_progress = 1.0
                 return True
 
         elif self.state == ArrowState.COLLIDING:
-            # 撞墙反馈效果：先向前试探性微冲 15 像素，遇到阻挡发生高频衰减晃动，最后恢复原位
-            t = min(1.0, self.anim_progress)
             dr, dc = self.direction.delta
+            # 物理撞击距离：飞至触碰阻挡物边沿
+            max_travel_dist = max(18.0, (self.collision_dist_cells - 0.70) * cell_size)
 
-            # 衰减晃动正弦波
-            decay = math.exp(-3.0 * t)
-            shake_amp = 14.0 * decay * math.sin(t * math.pi * 5)
+            # 阶段时间划分：
+            # 阶段 1 (0 -> t_hit): 向前飞抵阻挡物
+            # 阶段 2 (t_hit -> t_shake): 在阻挡物处撞击震颤与受阻报警
+            # 阶段 3 (t_shake -> 1.0): 平滑弹回并滑动复位
+            t_hit = min(0.42, (0.10 + 0.045 * min(4.0, self.collision_dist_cells)) / self.anim_duration)
+            t_shake = min(0.72, t_hit + 0.14 / self.anim_duration)
 
-            # 向前阻挡回弹
-            forward_amp = math.sin(t * math.pi) * 12.0
+            if p < t_hit:
+                # 阶段 1：平滑快速前飞奔向阻挡物
+                k = (p / t_hit) ** 1.2
+                curr_dist = k * max_travel_dist
+                self.offset_x = dc * curr_dist
+                self.offset_y = dr * curr_dist
 
-            # 侧向晃动方向（垂直于运动方向）
-            perp_r, perp_c = -dc, dr
+            elif p < t_shake:
+                # 刚到达撞击点瞬间触发事件
+                if not self.impact_triggered:
+                    self.impact_triggered = True
+                    self.just_impacted = True
 
-            self.offset_x = dc * forward_amp + perp_c * shake_amp
-            self.offset_y = dr * forward_amp + perp_r * shake_amp
+                # 阶段 2：在阻挡物面前高频衰减震颤反馈
+                sp = (p - t_hit) / (t_shake - t_hit)
+                decay = math.exp(-3.5 * sp)
+                shake_amp = 8.0 * decay * math.sin(sp * math.pi * 5.0)
+                recoil = -3.5 * math.sin(sp * math.pi)
 
-            if self.anim_progress >= 1.0:
+                # 侧向晃动分量（垂直于运动方向）
+                perp_r, perp_c = -dc, dr
+                forward = max_travel_dist + recoil
+                self.offset_x = dc * forward + perp_c * shake_amp
+                self.offset_y = dr * forward + perp_r * shake_amp
+
+            else:
+                # 阶段 3：从阻挡物处平滑反弹滑回初始格位
+                if not self.impact_triggered:
+                    self.impact_triggered = True
+                    self.just_impacted = True
+
+                rp = (p - t_shake) / (1.0 - t_shake)
+                # 平滑缓动回到 0
+                ease = 0.5 - 0.5 * math.cos(rp * math.pi)
+                curr_dist = max_travel_dist * (1.0 - ease)
+                self.offset_x = dc * curr_dist
+                self.offset_y = dr * curr_dist
+
+            if p >= 1.0:
                 self.state = ArrowState.IDLE
                 self.anim_progress = 0.0
                 self.offset_x = 0.0
