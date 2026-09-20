@@ -34,10 +34,10 @@
 
 ### 4. 沉浸式立体音效与背景音乐系统
 - **CC0 赛博合成波背景音乐 (BGM)**：
-  - 精选知名开源音乐人 Fupi 创作的 Synthwave House Loop (114 BPM，空间合成器 Pad 铺底 + 强劲复古贝斯律动)；
+  - 精选知名开源音乐人 Fupi 创作的 `Synthwave House Loop` (114 BPM，空间合成器 Pad 铺底 + 强劲复古贝斯律动)；
   - 采用 **CC0 1.0 Universal 公共领域全免费授权**，支持无缝循环伴奏与淡入淡出（fade-in/fade-out）。
 - **程序化合成 PCM 音效系统**：
-  - 基于 Python 标准库 wave 与数学波形实时生成，零外部音效文件依赖：
+  - 基于 Python 标准库 `wave` 与数学波形实时生成，零外部音效文件依赖：
     - **成功飞出音 (Fly)**：400Hz -> 900Hz 快速上扬正弦扫频；
     - **赛博金属碰撞音 (Cyber Deflect)**：580Hz -> 160Hz 快速下潜 FM 调制金属偏振声 + 瞬态火花爆破 + 90Hz 充沛低频抗阻重音；
     - **按钮点击音 (Click)**：880Hz 极短高频清脆点触；
@@ -46,7 +46,7 @@
     - **失败音 (Fail)**：下行悲伤短音 (A4 -> F4 -> D4)。
 
 ### 5. 辅助与高分扩展功能 (Bonus Features)
-- **全局 M 键随时静音**：在游戏任何界面与游玩阶段，按下键盘 M 键随时一键开启/静音背景音乐。
+- **全局 M 键随时静音**：在游戏任何界面与游玩阶段，按下键盘 `M` 键随时一键开启/静音背景音乐。
 - **智能提示 (Hint, 快捷键 H)**：自动检测当前棋盘上的可消除箭头，以金色呼吸能量光环动态高亮引导。
 - **悔棋撤销 (Undo, 快捷键 U)**：支持单步撤销已消除箭头及失误惩罚，回退历史操作。
 - **AI 自动求解演示 (Auto Solve, 快捷键 A)**：一键开启 AI 步进推演，动态自动演示通关全流程。
@@ -54,45 +54,57 @@
 
 ---
 
-## 三、 开发与运行环境
+## 三、 游戏实机截图展示
+
+| 赛博合成波主菜单界面 | 关卡游玩实况 (Stage 03) |
+|:---:|:---:|
+| ![主菜单](assets/screenshots/menu.png) | ![游玩界面](assets/screenshots/gameplay.png) |
+
+| 关卡选择界面 | 关卡通关达成结算 |
+|:---:|:---:|
+| ![关卡选择](assets/screenshots/level_select.png) | ![通关结算](assets/screenshots/level_clear.png) |
+
+---
+
+## 四、 开发与运行环境
 
 | 项目 | 要求与配置 |
 |:---|:---|
 | **操作系统** | Windows 10 / 11、macOS、Linux |
 | **编程语言** | Python 3.8 ~ 3.13+ (推荐 3.10+) |
-| **核心游戏引擎** | pygame-ce (>= 2.5.0) |
-| **音频依赖** | 标准库 wave + pygame.mixer (支持 OGG / WAV) |
+| **核心游戏引擎** | `pygame-ce` (>= 2.5.0) |
+| **音频依赖** | 标准库 `wave` + `pygame.mixer` (支持 OGG / WAV) |
 
 ---
 
-## 四、 安装与运行指南
+## 五、 安装与运行指南
 
 ### 1. 克隆代码仓库
-`ash
+```bash
 git clone https://github.com/King-Zhi/ArrowByArrow.git
 cd ArrowByArrow
-`
+```
 
 ### 2. 安装项目依赖
 推荐在虚拟环境或系统终端中安装：
-`ash
+```bash
 pip install -r requirements.txt
-`
+```
 
 ### 3. 启动游戏
-`ash
+```bash
 python main.py
-`
+```
 
 ### 4. 运行全套自动化测试
-`ash
+```bash
 python -m unittest discover -s tests
-`
+```
 > 目前包含 10 项严苛的单元测试，覆盖核心消除、阻挡失误、边界安全、通关判定、全关卡可解性、碰撞互斥锁及音频管理器 API。
 
 ---
 
-## 五、 操作按键说明
+## 六、 操作按键说明
 
 | 按键 / 操作 | 作用范围 | 功能说明 |
 |:---|:---|:---|
@@ -106,7 +118,7 @@ python -m unittest discover -s tests
 
 ---
 
-## 六、 关卡配置一览
+## 七、 关卡配置一览
 
 | 关卡编号 | 关卡名称 | 棋盘规格 | 箭头总数 | 最大容错 | 关卡设计特点 |
 |:---:|:---|:---:|:---:|:---:|:---|
@@ -117,16 +129,21 @@ python -m unittest discover -s tests
 
 ---
 
-## 七、 项目工程架构
+## 八、 项目工程架构
 
-`	ext
+```text
 ArrowByArrow/
 ├── assets/                          # 多媒体与美术资产目录
 │   ├── audio/                       # 背景音乐与音频资源
 │   │   ├── bgm_synthwave.ogg        # CC0 赛博合成波背景音乐 (1.17 MB)
 │   │   └── README.md                # 音频版权与来源许可说明
-│   └── images/                      # 图像资产
-│       └── bg.png                   # 80s 霓虹透视空间背景贴图
+│   ├── images/                      # 图像资产
+│   │   └── bg.png                   # 80s 霓虹透视空间背景贴图
+│   └── screenshots/                 # 游戏实机高清截图
+│       ├── menu.png                 # 赛博主菜单
+│       ├── gameplay.png             # 核心游玩关卡
+│       ├── level_select.png         # 关卡选择
+│       └── level_clear.png          # 通关结算
 ├── src/                             # 核心源代码
 │   ├── core/                        # 游戏核心逻辑模块
 │   │   ├── arrow.py                 # 箭头实体类、四向枚举、物理飞跃与碰撞动画插值
@@ -145,12 +162,12 @@ ArrowByArrow/
 ├── requirements.txt                 # Python 依赖清单 (pygame-ce)
 ├── README.md                        # 项目官方使用与说明文档
 └── BLOG.md                          # 软件工程个人作业博客发布稿
-`
+```
 
 ---
 
-## 八、 开源许可与资产致谢
+## 九、 开源许可与资产致谢
 
 - **代码许可**：本项目代码遵循 MIT License 开源协议。
-- **背景音乐**：Synthwave House Loop 遵循 **CC0 1.0 Universal** 公共领域协议，感谢作者 [Fupi (OpenGameArt)](https://opengameart.org/content/synthwave-house-loop) 的优秀作品。
+- **背景音乐**：`Synthwave House Loop` 遵循 **CC0 1.0 Universal** 公共领域协议，感谢作者 [Fupi (OpenGameArt)](https://opengameart.org/content/synthwave-house-loop) 的优秀作品。
 - **音效系统**：所有游戏音效均为程序实时数学波形计算生成，完全自主可控。
