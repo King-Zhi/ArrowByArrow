@@ -62,50 +62,65 @@ class GameApp:
         self._init_buttons()
         self._load_level(0)
 
+        # 启动赛博合成波背景音乐（无缝循环 + 淡入）
+        self.sound_mgr.play_bgm(loop=True)
+
     def _init_buttons(self):
         """初始化赛博霓虹触感交互按钮（纯几何矢量图标，绝无方块乱码 □）"""
         cx = self.width // 2
 
-        # 1. 主菜单核心选项
-        btn_w, btn_h = 280, 52
+        # 1. 主菜单核心选项（5 项均布，优雅留白）
+        btn_w, btn_h = 280, 48
+        gap = 14
+        start_y = 285
         self.menu_buttons = [
             ModernButton(
-                pygame.Rect(cx - btn_w // 2, 295, btn_w, btn_h),
+                pygame.Rect(cx - btn_w // 2, start_y, btn_w, btn_h),
                 "开始挑战",
                 icon_type="play",
                 bg_color=(18, 42, 70),
                 hover_color=(25, 65, 110),
-                font_size=18,
+                font_size=17,
                 radius=10,
                 accent_border=ColorPalette.CYAN
             ),
             ModernButton(
-                pygame.Rect(cx - btn_w // 2, 365, btn_w, btn_h),
+                pygame.Rect(cx - btn_w // 2, start_y + (btn_h + gap), btn_w, btn_h),
                 "关卡选择",
                 icon_type="levels",
                 bg_color=(45, 18, 54),
                 hover_color=(75, 25, 88),
-                font_size=16,
+                font_size=15,
                 radius=10,
                 accent_border=ColorPalette.MAGENTA
             ),
             ModernButton(
-                pygame.Rect(cx - btn_w // 2, 435, btn_w, btn_h),
-                "音效: 开启",
-                icon_type="sound_on",
+                pygame.Rect(cx - btn_w // 2, start_y + (btn_h + gap) * 2, btn_w, btn_h),
+                "音乐: 开启",
+                icon_type="music_on",
                 bg_color=(18, 45, 30),
                 hover_color=(28, 70, 48),
-                font_size=16,
+                font_size=15,
                 radius=10,
                 accent_border=ColorPalette.LIME
             ),
             ModernButton(
-                pygame.Rect(cx - btn_w // 2, 505, btn_w, btn_h),
+                pygame.Rect(cx - btn_w // 2, start_y + (btn_h + gap) * 3, btn_w, btn_h),
+                "音效: 开启",
+                icon_type="sound_on",
+                bg_color=(20, 38, 58),
+                hover_color=(30, 60, 90),
+                font_size=15,
+                radius=10,
+                accent_border=ColorPalette.CYAN
+            ),
+            ModernButton(
+                pygame.Rect(cx - btn_w // 2, start_y + (btn_h + gap) * 4, btn_w, btn_h),
                 "退出游戏",
                 icon_type="quit",
                 bg_color=(42, 18, 32),
                 hover_color=(70, 25, 48),
-                font_size=16,
+                font_size=15,
                 radius=10,
                 accent_border=ColorPalette.ROSE
             ),
@@ -292,6 +307,9 @@ class GameApp:
 
     def _handle_keydown(self, key):
         """快捷键支持"""
+        if key == pygame.K_m:
+            self._action_toggle_music()
+
         if self.state == GameState.PLAYING:
             if key == pygame.K_r:
                 self._action_restart()
@@ -316,10 +334,10 @@ class GameApp:
             elif self.menu_buttons[1].rect.collidepoint(mouse_pos):
                 self.state = GameState.LEVEL_SELECT
             elif self.menu_buttons[2].rect.collidepoint(mouse_pos):
-                enabled = self.sound_mgr.toggle_sound()
-                self.menu_buttons[2].text = f"音效: {'开启' if enabled else '关闭'}"
-                self.menu_buttons[2].icon_type = "sound_on" if enabled else "sound_off"
+                self._action_toggle_music()
             elif self.menu_buttons[3].rect.collidepoint(mouse_pos):
+                self._action_toggle_sound()
+            elif self.menu_buttons[4].rect.collidepoint(mouse_pos):
                 self.running = False
 
         elif self.state == GameState.LEVEL_SELECT:
@@ -423,6 +441,22 @@ class GameApp:
             return
         self.ai_solving = not self.ai_solving
         self.ai_last_step_time = time.time()
+
+    def _action_toggle_music(self):
+        """切换背景音乐开关"""
+        enabled = self.sound_mgr.toggle_music()
+        if len(self.menu_buttons) > 2:
+            self.menu_buttons[2].text = f"音乐: {'开启' if enabled else '关闭'}"
+            self.menu_buttons[2].icon_type = "music_on" if enabled else "music_off"
+            self.menu_buttons[2].accent_border = ColorPalette.LIME if enabled else ColorPalette.PANEL_BORDER
+
+    def _action_toggle_sound(self):
+        """切换音效开关"""
+        enabled = self.sound_mgr.toggle_sound()
+        if len(self.menu_buttons) > 3:
+            self.menu_buttons[3].text = f"音效: {'开启' if enabled else '关闭'}"
+            self.menu_buttons[3].icon_type = "sound_on" if enabled else "sound_off"
+            self.menu_buttons[3].accent_border = ColorPalette.CYAN if enabled else ColorPalette.PANEL_BORDER
 
     def _update(self, dt: float):
         """帧逻辑更新"""

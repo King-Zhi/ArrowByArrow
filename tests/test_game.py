@@ -14,6 +14,7 @@ from src.core.arrow import Arrow, ArrowState, Direction
 from src.core.board import Board
 from src.core.solver import Solver
 from src.core.level_manager import LevelManager, Level
+from src.audio.sound import SoundManager
 
 
 class TestArrowGame(unittest.TestCase):
@@ -215,6 +216,44 @@ class TestArrowGame(unittest.TestCase):
         res4 = self.board.click_arrow(0, 0)
         self.assertEqual(res4["status"], "success")
         self.assertNotIn((0, 0), self.board.grid)
+
+    def test_sound_manager_bgm_and_sound_toggles(self):
+        """验证音频管理器的背景音乐与音效控制功能"""
+        sm = SoundManager()
+        self.assertTrue(sm.enabled)
+        self.assertTrue(sm.music_enabled)
+
+        # 验证音乐切换
+        res = sm.toggle_music()
+        self.assertFalse(res)
+        self.assertFalse(sm.music_enabled)
+
+        res = sm.toggle_music()
+        self.assertTrue(res)
+        self.assertTrue(sm.music_enabled)
+
+        # 验证音效切换
+        res_s = sm.toggle_sound()
+        self.assertFalse(res_s)
+        self.assertFalse(sm.enabled)
+
+        res_s = sm.toggle_sound()
+        self.assertTrue(res_s)
+        self.assertTrue(sm.enabled)
+
+        # 验证音量设置边界
+        sm.set_music_volume(0.5)
+        self.assertEqual(sm.music_volume, 0.5)
+        sm.set_music_volume(1.5)
+        self.assertEqual(sm.music_volume, 1.0)
+        sm.set_music_volume(-0.5)
+        self.assertEqual(sm.music_volume, 0.0)
+
+        # 验证 BGM 播放与停止 API（无异常抛出）
+        sm.play_bgm(loop=True)
+        sm.pause_bgm()
+        sm.unpause_bgm()
+        sm.stop_bgm()
 
 
 if __name__ == "__main__":

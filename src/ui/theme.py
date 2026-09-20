@@ -167,6 +167,38 @@ def draw_vector_icon(surface: pygame.Surface, center: Tuple[int, int], size: int
             for dy in (-gap - box_s // 2, gap - box_s // 2):
                 pygame.draw.rect(surface, color, (cx + dx, cy + dy, box_s, box_s), border_radius=2)
 
+    elif icon_type == "music_on":
+        # 赛博连梁双音符 (♫)
+        # 左音符头与符干
+        pygame.draw.ellipse(surface, color, (cx - hs * 0.65, cy + hs * 0.15, hs * 0.45, hs * 0.38))
+        pygame.draw.line(surface, color, (cx - hs * 0.22, cy + hs * 0.35), (cx - hs * 0.22, cy - hs * 0.55), width=2)
+        # 右音符头与符干
+        pygame.draw.ellipse(surface, color, (cx + hs * 0.15, cy - hs * 0.05, hs * 0.45, hs * 0.38))
+        pygame.draw.line(surface, color, (cx + hs * 0.58, cy + hs * 0.15), (cx + hs * 0.58, cy - hs * 0.75), width=2)
+        # 顶部斜向连梁
+        beam_pts = [
+            (cx - hs * 0.25, cy - hs * 0.55),
+            (cx + hs * 0.60, cy - hs * 0.75),
+            (cx + hs * 0.60, cy - hs * 0.45),
+            (cx - hs * 0.25, cy - hs * 0.25),
+        ]
+        pygame.draw.polygon(surface, color, beam_pts)
+
+    elif icon_type == "music_off":
+        # 赛博连梁双音符 + 玫瑰红斜向静音杠
+        pygame.draw.ellipse(surface, color, (cx - hs * 0.65, cy + hs * 0.15, hs * 0.45, hs * 0.38))
+        pygame.draw.line(surface, color, (cx - hs * 0.22, cy + hs * 0.35), (cx - hs * 0.22, cy - hs * 0.55), width=2)
+        pygame.draw.ellipse(surface, color, (cx + hs * 0.15, cy - hs * 0.05, hs * 0.45, hs * 0.38))
+        pygame.draw.line(surface, color, (cx + hs * 0.58, cy + hs * 0.15), (cx + hs * 0.58, cy - hs * 0.75), width=2)
+        beam_pts = [
+            (cx - hs * 0.25, cy - hs * 0.55),
+            (cx + hs * 0.60, cy - hs * 0.75),
+            (cx + hs * 0.60, cy - hs * 0.45),
+            (cx - hs * 0.25, cy - hs * 0.25),
+        ]
+        pygame.draw.polygon(surface, color, beam_pts)
+        pygame.draw.line(surface, ColorPalette.ROSE, (cx - hs * 0.75, cy - hs * 0.75), (cx + hs * 0.75, cy + hs * 0.75), width=2)
+
     elif icon_type == "sound_on":
         # 喇叭主体 + 声音波纹
         pygame.draw.rect(surface, color, (cx - hs * 0.8, cy - hs * 0.35, hs * 0.45, hs * 0.7), border_radius=1)
