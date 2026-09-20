@@ -7,6 +7,7 @@
 import io
 import math
 import os
+import random
 import struct
 import wave
 from typing import Optional
@@ -72,22 +73,32 @@ class SoundManager:
         self.sounds["fly"] = pygame.mixer.Sound(self._create_wav_bytes(fly_samples, sr))
         self.sounds["fly"].set_volume(0.4)
 
-        # 2. 碰撞受阻音 (Blocked / Bump): 低频下潜顿挫波 (180Hz -> 80Hz) + 微量泛音
-        bump_duration = 0.18
+        # 2. 赛博碰撞受阻音 (Blocked / Cyber Deflect):
+        # 尖锐高科技金属接触冲击 + FM 能量偏折共鸣 + 顿挫低频抗阻重音
+        bump_duration = 0.22
         n_samples = int(sr * bump_duration)
         bump_samples = []
+        # 固定随机种子确保音频波形确切且一致
+        rng = random.Random(42)
         for i in range(n_samples):
             t = i / sr
             progress = i / n_samples
-            freq = max(60.0, 180.0 - 120.0 * progress)
-            env = math.exp(-12.0 * progress)
-            # 基频 + 二次谐波模拟木质敲击声
-            sample = 22000.0 * env * (
-                math.sin(2.0 * math.pi * freq * t) + 0.4 * math.sin(4.0 * math.pi * freq * t)
-            )
+            # 1. 瞬态冲击火花微爆（前 20ms）
+            transient_env = math.exp(-45.0 * progress)
+            spark_noise = (rng.random() * 2.0 - 1.0) * transient_env * 0.35
+
+            # 2. 能量共振主体：FM 调制金属偏振声 (基础频率 580Hz -> 160Hz 快速衰减)
+            base_freq = 580.0 * math.exp(-12.0 * progress) + 160.0
+            fm_mod = 3.5 * math.exp(-22.0 * progress) * math.sin(2.0 * math.pi * 840.0 * t)
+            metal_body = math.sin(2.0 * math.pi * base_freq * t + fm_mod) * math.exp(-14.0 * progress)
+
+            # 3. 顿挫低频阻尼 (90Hz 充沛底鼓质感)
+            sub_punch = math.sin(2.0 * math.pi * 90.0 * t) * math.exp(-10.0 * progress) * 0.45
+
+            sample = 26000.0 * (metal_body * 0.75 + spark_noise + sub_punch)
             bump_samples.append(sample)
         self.sounds["blocked"] = pygame.mixer.Sound(self._create_wav_bytes(bump_samples, sr))
-        self.sounds["blocked"].set_volume(0.6)
+        self.sounds["blocked"].set_volume(0.65)
 
         # 3. 点击按钮音 (Click): 极短高频清脆点触 (880Hz)
         click_duration = 0.04
