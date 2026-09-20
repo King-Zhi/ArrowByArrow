@@ -182,6 +182,40 @@ class TestArrowGame(unittest.TestCase):
         self.assertTrue(undo_res)
         self.assertIn((0, 0), self.board.grid)
 
+    def test_cannot_click_while_another_arrow_is_colliding(self):
+        """
+        验证交互互斥保护：
+        当一个箭头发生碰撞且未回到原位前，点击其他任何箭头均判定为无效，直到原位归位后方可继续交互
+        """
+        # 1. 点击有阻挡的 (1, 1)，使其进入碰撞动画流程
+        res1 = self.board.click_arrow(1, 1)
+        self.assertEqual(res1["status"], "blocked")
+        self.assertTrue(self.board.has_colliding_arrow())
+        self.assertEqual(self.board.grid[(1, 1)].state, ArrowState.COLLIDING)
+
+        # 2. 在 (1, 1) 尚未回到原位时，尝试点击无阻挡的 (0, 0)
+        res2 = self.board.click_arrow(0, 0)
+        self.assertEqual(res2["status"], "animating")
+        # 验证 (0, 0) 未被触发飞出，仍静止位于网格中
+        self.assertIn((0, 0), self.board.grid)
+        self.assertEqual(self.board.grid[(0, 0)].state, ArrowState.IDLE)
+
+        # 3. 尝试重复点击正在碰撞中的 (1, 1)，同样被阻断
+        res3 = self.board.click_arrow(1, 1)
+        self.assertEqual(res3["status"], "animating")
+
+        # 4. 更新时钟模拟碰撞、反弹并平滑滑回原位（动画进度达到 100%）
+        self.board.update(dt=1.0)
+        self.assertFalse(self.board.has_colliding_arrow())
+        self.assertEqual(self.board.grid[(1, 1)].state, ArrowState.IDLE)
+        self.assertEqual(self.board.grid[(1, 1)].offset_x, 0.0)
+        self.assertEqual(self.board.grid[(1, 1)].offset_y, 0.0)
+
+        # 5. 上一个箭头已完全回到原位，此时再次点击 (0, 0) 可以正常飞出
+        res4 = self.board.click_arrow(0, 0)
+        self.assertEqual(res4["status"], "success")
+        self.assertNotIn((0, 0), self.board.grid)
+
 
 if __name__ == "__main__":
     unittest.main()

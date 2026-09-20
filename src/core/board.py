@@ -77,6 +77,10 @@ class Board:
         # 射线延伸出边界未碰到阻挡，判定为路径畅通
         return True, None
 
+    def has_colliding_arrow(self) -> bool:
+        """检查棋盘上是否有任何箭头正处于受阻碰撞/回退原位的动画过程中"""
+        return any(arrow.state == ArrowState.COLLIDING for arrow in self.grid.values())
+
     def click_arrow(self, row: int, col: int) -> Dict[str, Any]:
         """
         处理对指定坐标箭头的点击交互
@@ -87,6 +91,10 @@ class Board:
             - blocker: 阻挡物（若受阻）
             - mistakes_left: 剩余失误次数
         """
+        # 若棋盘上有任何箭头正处于受阻碰撞回退原位的动画过程中，禁止触发新的点击交互
+        if self.has_colliding_arrow():
+            return {"status": "animating", "arrow": None}
+
         if (row, col) not in self.grid:
             return {"status": "invalid", "arrow": None}
 
@@ -183,6 +191,25 @@ class Board:
     def is_failed(self) -> bool:
         """检查是否失败（失误次数耗尽且未通关）"""
         return self.remaining_mistakes <= 0 and not self.is_cleared()
+
+    def is_animating(self) -> bool:
+        """检查棋盘当前是否有任何箭头正在飞出或受阻碰撞动画中"""
+        if len(self.flying_arrows) > 0:
+            return True
+        return any(arrow.state != ArrowState.IDLE for arrow in self.grid.values())
+
+    @property
+    def display_remaining_mistakes(self) -> int:
+        """
+        用于 UI 呈现的失误次数：
+        当箭头被点击后在飞向阻挡物途中（尚未触碰撞击），视觉上保留该心形；
+        直到箭头真正撞上阻挡箭头（impact_triggered 触发）的瞬间才扣除！
+        """
+        pending = sum(
+            1 for arrow in self.grid.values()
+            if arrow.state == ArrowState.COLLIDING and not getattr(arrow, "impact_triggered", True)
+        )
+        return min(self.max_mistakes, self.remaining_mistakes + pending)
 
     def remaining_count(self) -> int:
         """当前棋盘剩余箭头数量"""

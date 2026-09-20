@@ -79,9 +79,9 @@ class LevelManager:
         l3_arrows = [
             (0, 0, "RIGHT"),
             (0, 4, "DOWN"),
+            (1, 0, "UP"),
             (1, 1, "UP"),
             (1, 3, "LEFT"),
-            (2, 0, "UP"),
             (2, 2, "RIGHT"),
             (2, 4, "RIGHT"),
             (3, 1, "DOWN"),

@@ -56,6 +56,7 @@ class GameApp:
         self.ai_solving = False
         self.ai_last_step_time = 0.0
         self.ai_step_delay = 0.45
+        self.fail_timer: Optional[float] = None
 
         # 初始化按钮
         self._init_buttons()
@@ -240,6 +241,7 @@ class GameApp:
         self.level_start_time = time.time()
         self.level_elapsed = 0.0
         self.ai_solving = False
+        self.fail_timer = None
 
     def run(self):
         """主游戏循环"""
@@ -268,7 +270,11 @@ class GameApp:
 
         # 悬浮态
         if self.state == GameState.PLAYING and self.current_board:
-            self.hover_cell = self.renderer.screen_to_grid(mouse_pos, self.current_board.rows, self.current_board.cols)
+            # 若有箭头正受阻碰撞且未回到原位，隐藏高亮悬浮框以示意等待
+            if self.current_board.has_colliding_arrow():
+                self.hover_cell = None
+            else:
+                self.hover_cell = self.renderer.screen_to_grid(mouse_pos, self.current_board.rows, self.current_board.cols)
             for btn in self.game_buttons.values():
                 btn.check_hover(mouse_pos)
         elif self.state == GameState.MENU:
@@ -331,10 +337,12 @@ class GameApp:
             elif self.game_buttons["menu"].rect.collidepoint(mouse_pos):
                 self.state = GameState.MENU
             else:
-                if self.current_board and not self.ai_solving:
-                    grid_pos = self.renderer.screen_to_grid(mouse_pos, self.current_board.rows, self.current_board.cols)
-                    if grid_pos:
-                        self._trigger_arrow_click(grid_pos[0], grid_pos[1])
+                if self.current_board and not self.ai_solving and not self.current_board.is_failed():
+                    # 必须等待上一个受阻箭头完全滑回原位后，其他箭头方可出发；在此期间点击任何箭头无效
+                    if not self.current_board.has_colliding_arrow():
+                        grid_pos = self.renderer.screen_to_grid(mouse_pos, self.current_board.rows, self.current_board.cols)
+                        if grid_pos:
+                            self._trigger_arrow_click(grid_pos[0], grid_pos[1])
 
         elif self.state == GameState.LEVEL_CLEAR:
             if self.win_buttons[0].rect.collidepoint(mouse_pos):
@@ -390,10 +398,11 @@ class GameApp:
             self.level_start_time = time.time()
             self.level_elapsed = 0.0
             self.ai_solving = False
+            self.fail_timer = None
 
     def _action_hint(self):
         """提示功能"""
-        if not self.current_board:
+        if not self.current_board or self.current_board.has_colliding_arrow():
             return
         hint_arrow = Solver.get_hint(self.current_board)
         if hint_arrow:
@@ -403,11 +412,15 @@ class GameApp:
 
     def _action_undo(self):
         """撤销步数"""
-        if self.current_board and self.current_board.undo():
+        if not self.current_board or self.current_board.has_colliding_arrow():
+            return
+        if self.current_board.undo():
             self.sound_mgr.play("click")
 
     def _action_toggle_ai_solve(self):
         """切换 AI 自动求解"""
+        if not self.current_board or self.current_board.has_colliding_arrow():
+            return
         self.ai_solving = not self.ai_solving
         self.ai_last_step_time = time.time()
 
@@ -433,8 +446,8 @@ class GameApp:
                         palette=[ColorPalette.ROSE, (255, 140, 160), (255, 230, 240), ColorPalette.CYAN]
                     )
 
-            # AI 自动步进推演
-            if self.ai_solving:
+            # AI 自动步进推演（若有受阻箭头未归位则暂停推演）
+            if self.ai_solving and not self.current_board.has_colliding_arrow():
                 now = time.time()
                 if now - self.ai_last_step_time >= self.ai_step_delay:
                     clearable = Solver.get_clearable_arrows(self.current_board)
@@ -456,11 +469,18 @@ class GameApp:
                 else:
                     self.state = GameState.ALL_CLEAR
 
-            # 失败检测
+            # 失败检测：必须等待致命受阻箭头的飞跃、触碰撞击及反弹滑回动画全部播完后，再弹出失败结算画面
             elif self.current_board.is_failed():
-                self.ai_solving = False
-                self.sound_mgr.play("fail")
-                self.state = GameState.GAME_OVER
+                if not self.current_board.is_animating():
+                    if self.fail_timer is None:
+                        self.fail_timer = time.time()
+                    elif time.time() - self.fail_timer >= 0.25:
+                        self.ai_solving = False
+                        self.sound_mgr.play("fail")
+                        self.state = GameState.GAME_OVER
+                        self.fail_timer = None
+                else:
+                    self.fail_timer = None
 
     def _render(self):
         """渲染绘制管线"""
@@ -532,7 +552,7 @@ class GameApp:
             self.screen,
             curr_level,
             remaining_arrows=self.current_board.remaining_count(),
-            remaining_mistakes=self.current_board.remaining_mistakes,
+            remaining_mistakes=self.current_board.display_remaining_mistakes,
             max_mistakes=curr_level.max_mistakes,
             elapsed_time=self.level_elapsed
         )
