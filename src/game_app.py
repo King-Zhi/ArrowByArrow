@@ -3,6 +3,7 @@
 全面接入方案D赛博霓虹与合成波街机风 UI、全息状态栏、矢量激光箭头与粒子管线
 """
 
+import os
 import math
 import time
 from enum import Enum
@@ -14,7 +15,7 @@ from .core.board import Board
 from .core.level_manager import LevelManager, Level
 from .core.solver import Solver
 from .audio.sound import SoundManager
-from .ui.theme import ColorPalette, FontManager, draw_card, draw_tactile_arrow, draw_soft_shadow
+from .ui.theme import ColorPalette, FontManager, AssetLoader, draw_card, draw_tactile_arrow, draw_soft_shadow
 from .ui.renderer import Renderer, ModernButton
 
 
@@ -33,6 +34,15 @@ class GameApp:
     def __init__(self, width: int = 960, height: int = 720):
         pygame.init()
         pygame.display.set_caption("一箭又一箭 - 赛博合成波街机版 (Arrow by Arrow)")
+
+        # 设置窗口与任务栏图标
+        try:
+            icon_path = AssetLoader.get_path("assets/icon.png")
+            if os.path.exists(icon_path):
+                icon_surf = pygame.image.load(icon_path)
+                pygame.display.set_icon(icon_surf)
+        except Exception:
+            pass
 
         self.width = width
         self.height = height
@@ -281,7 +291,7 @@ class GameApp:
                 self._handle_keydown(event.key)
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                self._handle_click(mouse_pos)
+                self._handle_click(event.pos)
 
         # 悬浮态
         if self.state == GameState.PLAYING and self.current_board:
@@ -619,13 +629,15 @@ class GameApp:
                 buttons=self.fail_buttons
             )
         elif self.state == GameState.ALL_CLEAR:
+            mistakes_made = curr_level.max_mistakes - self.current_board.remaining_mistakes
+            stars = 3 if mistakes_made == 0 else (2 if mistakes_made == 1 else 1)
             self.renderer.draw_modal(
                 self.screen,
                 title="全 部 关 卡 彻 底 通 关！",
-                subtitle="登峰造极！你已彻底攻破全部箭阵迷局，成为特级神箭手！",
+                subtitle=f"登峰造极！最终关用时: {int(self.level_elapsed)}s   |   失误: {mistakes_made}次",
                 title_color=ColorPalette.AMBER,
                 buttons=self.all_clear_buttons,
-                stars=3
+                stars=stars
             )
 
     def _render_level_select(self):

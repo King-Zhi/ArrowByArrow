@@ -5,6 +5,7 @@
 
 import math
 import os
+import sys
 from typing import Tuple, List, Optional, Dict
 import pygame
 
@@ -73,11 +74,18 @@ class AssetLoader:
     _cached_bg: Optional[pygame.Surface] = None
 
     @classmethod
+    def get_path(cls, rel_path: str) -> str:
+        """获取资源文件的绝对路径（兼容开发环境与 PyInstaller 解压运行环境）"""
+        base_dir = getattr(sys, "_MEIPASS", os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+        return os.path.join(base_dir, rel_path)
+
+    @classmethod
     def get_background(cls, width: int = 960, height: int = 720) -> pygame.Surface:
         if cls._cached_bg and cls._cached_bg.get_size() == (width, height):
             return cls._cached_bg
 
-        bg_path = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "images", "bg.png")
+        base_dir = getattr(sys, "_MEIPASS", os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+        bg_path = os.path.join(base_dir, "assets", "images", "bg.png")
         if os.path.exists(bg_path):
             try:
                 loaded = pygame.image.load(bg_path).convert()

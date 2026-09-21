@@ -19,3 +19,9 @@ BLOG.md
 .idea/
 .DS_Store
 Thumbs.db
+
+# PyInstaller / Build artifacts
+build/
+dist/
+*.spec
+

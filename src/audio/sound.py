@@ -9,6 +9,7 @@ import math
 import os
 import random
 import struct
+import sys
 import wave
 from typing import Optional
 import pygame
@@ -22,8 +23,9 @@ class SoundManager:
         self.music_enabled = True
         self.music_volume = 0.32
         self.music_playing = False
+        base_dir = getattr(sys, "_MEIPASS", os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
         self.music_path = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "..", "assets", "audio", "bgm_synthwave.ogg")
+            os.path.join(base_dir, "assets", "audio", "bgm_synthwave.ogg")
         )
         self.sounds = {}
         self._init_mixer()
