@@ -146,11 +146,13 @@ ArrowByArrow/
 │   │   └── README.md                # 音频版权与来源许可说明
 │   ├── images/                      # 图像资产
 │   │   └── bg.png                   # 80s 霓虹透视空间背景贴图
-│   └── screenshots/                 # 游戏实机高清截图
-│       ├── menu.png                 # 赛博主菜单
-│       ├── gameplay.png             # 核心游玩关卡
-│       ├── level_select.png         # 关卡选择
-│       └── level_clear.png          # 通关结算
+│   ├── screenshots/                 # 游戏实机高清截图
+│   │   ├── menu.png                 # 赛博主菜单
+│   │   ├── gameplay.png             # 核心游玩关卡
+│   │   ├── level_select.png         # 关卡选择
+│   │   └── level_clear.png          # 通关结算
+│   ├── icon.ico                     # Windows 可执行程序专属图标
+│   └── icon.png                     # 游戏窗口与任务栏高清图标
 ├── src/                             # 核心源代码
 │   ├── core/                        # 游戏核心逻辑模块
 │   │   ├── arrow.py                 # 箭头实体类、四向枚举、物理飞跃与碰撞动画插值
@@ -165,10 +167,12 @@ ArrowByArrow/
 │   └── game_app.py                  # 游戏主应用程序与顶层状态机 (MENU, PLAYING, WIN, OVER等)
 ├── tests/                           # 单元测试模块
 │   └── test_game.py                 # 覆盖 T01~T06 规范用例、死锁验证与互斥锁的自动化测试集
+├── build_exe.py                     # PyInstaller 一键自动化打包脚本
 ├── main.py                          # 游戏程序入口
 ├── requirements.txt                 # Python 依赖清单 (pygame-ce)
-├── README.md                        # 项目官方使用与说明文档
-└── BLOG.md                          # 软件工程个人作业博客发布稿
+├── run.bat                          # Windows 一键启动脚本
+├── .gitignore                       # Git 忽略规则配置
+└── README.md                        # 项目官方使用与说明文档
 ```
 
 ---
